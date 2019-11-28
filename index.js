@@ -15,7 +15,7 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
     if (err) return console.log('Error loading client secret file:', err);
     // Authorize a client with credentials, then call the Google Sheets API.
-    authorize(JSON.parse(content), getAllStudents);
+    authorize(JSON.parse(content), controller);
 });
 
 /**
@@ -68,30 +68,42 @@ function getNewToken(oAuth2Client, callback) {
     });
 }
 
-let ubiqumStudent = []
+let ubiqumStudents = []
+let ubiqumAlumni = []
 
 function listStudents(auth, sheet) {
     const sheets = google.sheets({ version: 'v4', auth });
     sheets.spreadsheets.values.get({
         spreadsheetId: sheet[1],
-        range: 'Students!A2:L',
+        range: 'Students!A2:P',
     }, (err, res) => {
         if (err) return console.log('The API returned an error: ' + err);
         const rows = res.data.values;
         if (rows.length) {
             students = []
             rows.map((row) => {
-                students.push({
+                ubiqumStudents.push({
                     program: row[1],
+                    city: sheet[0],
                     cohort: row[2],
-                    name: row[3]
-                })
-                console.log(`${sheet[0]}: ${row[1]}-${row[2]}, ${row[3]}`);
-            });
-            ubiqumStudent.push({
+                    startDate: row[15],
+                    name: row[3],
+                    email: row[4],
+                    jobCenter: row[0],
+                    progress: {
+                        module: row[5],
+                        sprint: row[6],
+                        day: row[7],
+                        refDay: row[8]
+                    },
+                    gitHub: row[11]
 
-                [sheet[0]]: students
-            })
+                })
+                console.log(`${sheet[0]}: ${row}`);
+            });
+            // ubiqumStudent.push(
+            //     students
+            // )
         } else {
             console.log('No data found.');
         }
@@ -99,6 +111,67 @@ function listStudents(auth, sheet) {
     });
 
 }
+
+const controller = (auth) => {
+    getAllAllumni(auth)
+    // getAllStudents(auth)
+}
+
+const getAllAllumni = (auth) => {
+    console.log('auth :', auth);
+    const sheets = google.sheets({ version: 'v4', auth });
+    sheets.spreadsheets.values.get({
+        spreadsheetId: '1ZY8mslTSqK7pBFLZECwBVnz7q_Kd3kSOlSCwOU-8i2s',
+        range: 'Backgrounds!A2:L',
+    }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+        const rows = res.data.values;
+
+        if (rows.length) {
+            rows.map((row, i) => {
+                console.log('row :', row);
+                let almni = {
+                    name: row[0],
+                    dob: row[1],
+                    country: row[2],
+                    program: row[3],
+                    education: row[4],
+                    degree: row[5],
+                    related: row[6],
+                    professional: row[7],
+                    workType: row[8],
+                    workTime: row[9],
+                    previousExt: row[10],
+                    categories: row[12],
+                }
+                let init = {
+                    name: '',
+                    dob: '',
+                    country: '',
+                    program: '',
+                    education: '',
+                    degree: '',
+                    related: '',
+                    professional: '',
+                    workType: '',
+                    workTime: '',
+                    previousExt: '',
+                    categories: '',
+                }
+                ubiqumAlumni.push({
+
+                    ...almni
+                })
+
+            });
+        } else {
+            console.log('No data found.');
+        }
+
+
+    });
+}
+
 const getAllStudents = (auth) => {
     const sheets = google.sheets({ version: 'v4', auth });
     sheets.spreadsheets.values.get({
@@ -118,7 +191,7 @@ const getAllStudents = (auth) => {
         } else {
             console.log('No data found.');
         }
-        console.log('ubiqumStudent :', ubiqumStudent);
+        console.log('ubiqumStudent :', ubiqumStudents);
 
     });
 
@@ -138,8 +211,33 @@ app.listen(port, () => {
     console.log(`Express server running on port ${port}`)
 });
 
-app.use("/all", (req, res) => {
-    res.send(ubiqumStudent)
+
+
+app.use("/students", (req, res) => {
+    let mapstudents = ubiqumStudents.map(student => {
+        const split = student.startDate.split('/')
+
+        const id = student.city.substring(0, 2).toUpperCase() + '-' + student.program.substring(0, 2).toUpperCase() + '-' + student.name.substring(0, 2).toUpperCase() + '-' + split[0] + '.' + split[2];
+        return {
+            ...student,
+            id,
+            surname: ''
+        }
+    })
+    res.send(mapstudents)
+})
+app.use("/allumni", (req, res) => {
+    // let mapAlumni = ubiqumAlumni.map(student => {
+    //     const split = student.startDate.split('/')
+
+    //     const id = student.city.substring(0, 2).toUpperCase() + '-' + student.program.substring(0, 2).toUpperCase() + '-' + student.name.substring(0, 2).toUpperCase() + '-' + split[0] + '.' + split[2];
+    //     return {
+    //         ...student,
+    //         id,
+    //         surname: ''
+    //     }
+    // })
+    res.send(ubiqumAlumni)
 })
 
 
