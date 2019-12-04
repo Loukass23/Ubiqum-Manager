@@ -70,6 +70,7 @@ function getNewToken(oAuth2Client, callback) {
 
 let ubiqumStudents = []
 let ubiqumAlumni = []
+let ubiqumLeads = []
 
 function listStudents(auth, sheet) {
     const sheets = google.sheets({ version: 'v4', auth });
@@ -113,10 +114,54 @@ function listStudents(auth, sheet) {
 }
 
 const controller = (auth) => {
-    getAllAllumni(auth)
+    // getAllAllumni(auth)
     // getAllStudents(auth)
+    getAllLeads(auth)
 }
 
+const getAllLeads = (auth) => {
+    console.log('auth :', auth);
+    const sheets = google.sheets({ version: 'v4', auth });
+    sheets.spreadsheets.values.get({
+        spreadsheetId: '1_8b6UoSXgnJmy-5M5ZW_nEyin8U8Gcp36wlG5pvEgXo',
+        range: 'Leads!A2:R',
+    }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+        const rows = res.data.values;
+
+
+        if (rows.length) {
+            rows.map((row, i) => {
+
+                ubiqumLeads.push({
+                    contactID: row[0],
+                    name: row[1],
+                    surname: row[2],
+                    fullname: row[3],
+                    email: row[4],
+                    phone: row[5],
+                    contactOwner: row[6],
+                    lastActivity: row[7],
+                    status: row[8],
+                    createDate: row[9],
+                    lifecycle: row[10],
+                    age: row[11],
+                    gender: row[12],
+                    nationality: row[13],
+                    english: row[14],
+                    createdDate: row[15],
+                }
+
+                )
+                console.log('ubiqumLeads :', ubiqumLeads);
+            });
+        } else {
+            console.log('No data found.');
+        }
+
+
+    });
+}
 const getAllAllumni = (auth) => {
     console.log('auth :', auth);
     const sheets = google.sheets({ version: 'v4', auth });
@@ -129,7 +174,7 @@ const getAllAllumni = (auth) => {
 
         if (rows.length) {
             rows.map((row, i) => {
-                console.log('row :', row);
+                // console.log('row :', row);
                 let almni = {
                     name: row[0],
                     dob: row[1],
@@ -144,20 +189,7 @@ const getAllAllumni = (auth) => {
                     previousExt: row[10],
                     categories: row[12],
                 }
-                let init = {
-                    name: '',
-                    dob: '',
-                    country: '',
-                    program: '',
-                    education: '',
-                    degree: '',
-                    related: '',
-                    professional: '',
-                    workType: '',
-                    workTime: '',
-                    previousExt: '',
-                    categories: '',
-                }
+
                 ubiqumAlumni.push({
 
                     ...almni
@@ -238,6 +270,10 @@ app.use("/allumni", (req, res) => {
     //     }
     // })
     res.send(ubiqumAlumni)
+})
+app.use("/leads", (req, res) => {
+    console.log('ubiqumLeads :', ubiqumLeads);
+    res.send(ubiqumLeads)
 })
 
 
